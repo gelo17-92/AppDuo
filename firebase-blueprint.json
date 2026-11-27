@@ -1,0 +1,442 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private profile and personal preferences for an authenticated user (strictly owner-only PII).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "initials": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4
+        },
+        "accentHex": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light"]
+        },
+        "householdId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "partnerSlot": {
+          "type": "string",
+          "enum": ["partnerA", "partnerB"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "name",
+        "initials",
+        "accentHex",
+        "theme",
+        "householdId",
+        "partnerSlot",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Household": {
+      "title": "Household",
+      "description": "Shared bank account configuration for a 2-person couple with per-partner display metadata.",
+      "type": "object",
+      "properties": {
+        "accountName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "initialBalance": {
+          "type": "number"
+        },
+        "savingsGoalPercent": {
+          "type": "number"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "memberUids": {
+          "type": "array",
+          "description": "Bounded list (1-2) of Firebase Auth UIDs belonging to the household."
+        },
+        "allowedEmails": {
+          "type": "array",
+          "description": "Bounded list (2) of authorized lowercase email addresses."
+        },
+        "partnerAUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "partnerBUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "partnerAName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "partnerBName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "partnerAInitials": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4
+        },
+        "partnerBInitials": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4
+        },
+        "partnerAAccent": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "partnerBAccent": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "accountName",
+        "initialBalance",
+        "savingsGoalPercent",
+        "ownerUid",
+        "memberUids",
+        "allowedEmails",
+        "partnerAUid",
+        "partnerBUid",
+        "partnerAName",
+        "partnerBName",
+        "partnerAInitials",
+        "partnerBInitials",
+        "partnerAAccent",
+        "partnerBAccent",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Income or expense entry recorded on the shared bank account.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "householdId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "allowedEmails": {
+          "type": "array",
+          "description": "Bounded list (1-2) of authorized household emails for rule-enforced list queries."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["expense", "income"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "categoryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "addedBy": {
+          "type": "string",
+          "enum": ["partnerA", "partnerB"]
+        },
+        "fixedExpenseId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "householdId",
+        "ownerUid",
+        "authorUid",
+        "allowedEmails",
+        "type",
+        "amount",
+        "title",
+        "categoryId",
+        "date",
+        "addedBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Customizable transaction category with linked default predefined concepts.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "householdId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "allowedEmails": {
+          "type": "array",
+          "description": "Bounded list (1-2) of authorized household emails for rule-enforced list queries."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "color": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["expense", "income", "both"]
+        },
+        "defaultConcepts": {
+          "type": "array",
+          "description": "Bounded list (0-20) of predefined concept labels linked to this category."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "householdId",
+        "ownerUid",
+        "allowedEmails",
+        "name",
+        "icon",
+        "color",
+        "type",
+        "defaultConcepts",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FixedExpense": {
+      "title": "FixedExpense",
+      "description": "Recurring household fixed expense (Hipoteca, Préstamos, Seguro de hogar) with editable due date.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "householdId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "allowedEmails": {
+          "type": "array",
+          "description": "Bounded list (1-2) of authorized household emails for rule-enforced list queries."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "categoryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "dueDate": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "amountSchedule": {
+          "type": "object",
+          "description": "Bounded map (<= 120 entries) of effective YYYY-MM (>= 2026-10) start months to recurring monthly EUR amounts."
+        },
+        "manualMonthlyAmounts": {
+          "type": "object",
+          "description": "Bounded map (<= 120 entries) of YYYY-MM (< 2026-10) months to manually entered monthly EUR amounts."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "householdId",
+        "ownerUid",
+        "allowedEmails",
+        "name",
+        "categoryId",
+        "amount",
+        "dueDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private per-user profile document isolated to the authenticated owner."
+    },
+    "/households/{householdId}": {
+      "schema": { "$ref": "#/entities/Household" },
+      "description": "Shared household bank account settings restricted to its two verified partner members."
+    },
+    "/households/{householdId}/transactions/{txId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Income and expense transactions belonging to the shared household."
+    },
+    "/households/{householdId}/categories/{catId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Categories and predefined concept lists belonging to the shared household."
+    },
+    "/households/{householdId}/fixedExpenses/{fixedId}": {
+      "schema": { "$ref": "#/entities/FixedExpense" },
+      "description": "Fixed household expenses (Hipoteca, Préstamos, Seguro de hogar) with editable maturity dates."
+    }
+  }
+}

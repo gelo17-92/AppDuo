@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>AppDuo Ingresos y Gastos</title>
+    <meta
+      name="description"
+      content="Aplicación web progresiva (PWA) móvil para gestionar los ingresos y gastos de vuestra cuenta bancaria común."
+    />
+    <meta property="og:title" content="AppDuo Ingresos y Gastos" />
+    <meta
+      property="og:description"
+      content="Registra ingresos y gastos de vuestra cuenta común del banco desde ambos móviles con estadísticas y copias de seguridad."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- PWA & iOS Safari Native App Meta Tags -->
+    <meta name="theme-color" content="#0B0F14" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F5F7FA" media="(prefers-color-scheme: light)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="application-name" content="AppDuo" />
+    <meta name="apple-mobile-web-app-title" content="AppDuo" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+
+    <!-- Typography: Plus Jakarta Sans + JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-[#F5F7FA] text-slate-900 dark:bg-[#0B0F14] dark:text-[#F4F6F9] antialiased selection:bg-emerald-500/25 selection:text-emerald-300">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

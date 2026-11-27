@@ -1,0 +1,543 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // Global Hardened Primitives
+    // =========================================================================
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isAuthorizedCoupleEmail() {
+      return userEmail() == 'angel2martinez92@gmail.com'
+        || userEmail() == 'silviamsg27@gmail.com';
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string
+        && request.auth.token.email.size() >= 3
+        && request.auth.token.email.size() <= 120
+        && isAuthorizedCoupleEmail();
+    }
+
+    function isValidId(id) {
+      return id is string
+        && id.size() >= 1
+        && id.size() <= 128
+        && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidHex(hex) {
+      return hex is string
+        && hex.size() == 7
+        && hex.matches('^#[0-9a-fA-F]{6}$');
+    }
+
+    function isValidDateStr(d) {
+      return d is string
+        && d.size() == 10
+        && d.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidAllowedEmails(arr) {
+      return arr is list
+        && arr.size() >= 1
+        && arr.size() <= 2
+        && arr[0] is string
+        && arr[0].size() >= 3
+        && arr[0].size() <= 120
+        && (arr.size() == 1 || (arr[1] is string && arr[1].size() >= 3 && arr[1].size() <= 120));
+    }
+
+    function isValidMemberUids(arr) {
+      return arr is list
+        && arr.size() >= 1
+        && arr.size() <= 2
+        && arr[0] is string
+        && arr[0].size() >= 1
+        && arr[0].size() <= 128
+        && (arr.size() == 1 || (arr[1] is string && arr[1].size() >= 1 && arr[1].size() <= 128));
+    }
+
+    function isValidConceptsList(arr) {
+      return arr is list
+        && arr.size() <= 20
+        && (arr.size() == 0 || (arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= 80));
+    }
+
+    function isValidMonthlyAmountMap(m) {
+      return m is map
+        && m.size() <= 120;
+    }
+
+    function isHouseholdDocMember(hhData) {
+      return request.auth.uid in hhData.memberUids
+        || userEmail() in hhData.allowedEmails;
+    }
+
+    function householdDoc(householdId) {
+      return get(/databases/$(database)/documents/households/$(householdId)).data;
+    }
+
+    function isHouseholdMember(householdId) {
+      return exists(/databases/$(database)/documents/households/$(householdId))
+        && isHouseholdDocMember(householdDoc(householdId));
+    }
+
+    function matchesHouseholdOwnership(householdId, data) {
+      return data.ownerUid == householdDoc(householdId).ownerUid
+        && data.allowedEmails == householdDoc(householdId).allowedEmails;
+    }
+
+    // =========================================================================
+    // Entity Validation Blueprints (Anti-Update-Gap & Strict Keys)
+    // =========================================================================
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'email', 'name', 'initials', 'accentHex',
+          'theme', 'householdId', 'partnerSlot', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'email', 'name', 'initials', 'accentHex',
+          'theme', 'householdId', 'partnerSlot', 'createdAt', 'updatedAt'
+        ])
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 120
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 60
+        && data.initials is string
+        && data.initials.size() >= 1
+        && data.initials.size() <= 4
+        && isValidHex(data.accentHex)
+        && (data.theme == 'dark' || data.theme == 'light')
+        && isValidId(data.householdId)
+        && (data.partnerSlot == 'partnerA' || data.partnerSlot == 'partnerB')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidHousehold(data) {
+      return data.keys().hasAll([
+          'accountName', 'initialBalance', 'savingsGoalPercent',
+          'ownerUid', 'memberUids', 'allowedEmails',
+          'partnerAUid', 'partnerBUid',
+          'partnerAName', 'partnerBName',
+          'partnerAInitials', 'partnerBInitials',
+          'partnerAAccent', 'partnerBAccent',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'accountName', 'initialBalance', 'savingsGoalPercent',
+          'ownerUid', 'memberUids', 'allowedEmails',
+          'partnerAUid', 'partnerBUid',
+          'partnerAName', 'partnerBName',
+          'partnerAInitials', 'partnerBInitials',
+          'partnerAAccent', 'partnerBAccent',
+          'createdAt', 'updatedAt'
+        ])
+        && data.accountName is string
+        && data.accountName.size() >= 1
+        && data.accountName.size() <= 80
+        && data.initialBalance is number
+        && data.savingsGoalPercent is number
+        && data.savingsGoalPercent >= 1
+        && data.savingsGoalPercent <= 100
+        && isValidId(data.ownerUid)
+        && isValidMemberUids(data.memberUids)
+        && isValidAllowedEmails(data.allowedEmails)
+        && data.partnerAUid is string
+        && data.partnerAUid.size() <= 128
+        && data.partnerBUid is string
+        && data.partnerBUid.size() <= 128
+        && data.partnerAName is string
+        && data.partnerAName.size() >= 1
+        && data.partnerAName.size() <= 60
+        && data.partnerBName is string
+        && data.partnerBName.size() >= 1
+        && data.partnerBName.size() <= 60
+        && data.partnerAInitials is string
+        && data.partnerAInitials.size() >= 1
+        && data.partnerAInitials.size() <= 4
+        && data.partnerBInitials is string
+        && data.partnerBInitials.size() >= 1
+        && data.partnerBInitials.size() <= 4
+        && isValidHex(data.partnerAAccent)
+        && isValidHex(data.partnerBAccent)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data, householdId, txId) {
+      return data.keys().hasAll([
+          'id', 'householdId', 'ownerUid', 'authorUid', 'allowedEmails',
+          'type', 'amount', 'title', 'categoryId', 'date', 'addedBy',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'householdId', 'ownerUid', 'authorUid', 'allowedEmails',
+          'type', 'amount', 'title', 'categoryId', 'date', 'addedBy',
+          'fixedExpenseId', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.id == txId
+        && isValidId(data.id)
+        && data.householdId == householdId
+        && isValidId(data.householdId)
+        && isValidId(data.ownerUid)
+        && isValidId(data.authorUid)
+        && isValidAllowedEmails(data.allowedEmails)
+        && (data.type == 'expense' || data.type == 'income')
+        && data.amount is number
+        && data.amount > 0
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 120
+        && isValidId(data.categoryId)
+        && isValidDateStr(data.date)
+        && (data.addedBy == 'partnerA' || data.addedBy == 'partnerB')
+        && (!('fixedExpenseId' in data) || (data.fixedExpenseId is string && data.fixedExpenseId.size() <= 128))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCategory(data, householdId, catId) {
+      return data.keys().hasAll([
+          'id', 'householdId', 'ownerUid', 'allowedEmails',
+          'name', 'icon', 'color', 'type', 'defaultConcepts',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'householdId', 'ownerUid', 'allowedEmails',
+          'name', 'icon', 'color', 'type', 'defaultConcepts',
+          'createdAt', 'updatedAt'
+        ])
+        && data.id == catId
+        && isValidId(data.id)
+        && data.householdId == householdId
+        && isValidId(data.householdId)
+        && isValidId(data.ownerUid)
+        && isValidAllowedEmails(data.allowedEmails)
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 60
+        && data.icon is string
+        && data.icon.size() >= 1
+        && data.icon.size() <= 40
+        && isValidHex(data.color)
+        && (data.type == 'expense' || data.type == 'income' || data.type == 'both')
+        && isValidConceptsList(data.defaultConcepts)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFixedExpense(data, householdId, fixedId) {
+      return data.keys().hasAll([
+          'id', 'householdId', 'ownerUid', 'allowedEmails',
+          'name', 'categoryId', 'amount', 'dueDate',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'householdId', 'ownerUid', 'allowedEmails',
+          'name', 'categoryId', 'amount', 'dueDate', 'notes',
+          'amountSchedule', 'manualMonthlyAmounts',
+          'createdAt', 'updatedAt'
+        ])
+        && data.id == fixedId
+        && isValidId(data.id)
+        && data.householdId == householdId
+        && isValidId(data.householdId)
+        && isValidId(data.ownerUid)
+        && isValidAllowedEmails(data.allowedEmails)
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 60
+        && isValidId(data.categoryId)
+        && data.amount is number
+        && data.amount > 0
+        && isValidDateStr(data.dueDate)
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && (!('amountSchedule' in data) || isValidMonthlyAmountMap(data.amountSchedule))
+        && (!('manualMonthlyAmounts' in data) || isValidMonthlyAmountMap(data.manualMonthlyAmounts))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // 1. Private User Profiles (Strict PII Isolation: Owner-Only)
+    // =========================================================================
+    match /users/{userId} {
+      allow get: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId;
+
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming(), userId)
+        && incoming().email == userEmail()
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'initials', 'theme', 'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // =========================================================================
+    // 2. Shared Couple Households (Per-Partner Profile Protection)
+    // =========================================================================
+    match /households/{householdId} {
+      allow get: if isVerifiedUser()
+        && isValidId(householdId)
+        && (
+          (resource == null && householdId == 'duo-angel-silvia')
+          || (resource != null && isHouseholdDocMember(existing()))
+        );
+
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidId(householdId)
+        && householdId == 'duo-angel-silvia'
+        && isValidHousehold(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && request.auth.uid in incoming().memberUids
+        && incoming().allowedEmails.size() == 2
+        && incoming().allowedEmails[0] == 'angel2martinez92@gmail.com'
+        && incoming().allowedEmails[1] == 'silviamsg27@gmail.com'
+        && userEmail() in incoming().allowedEmails
+        && (incoming().partnerAUid == request.auth.uid || incoming().partnerBUid == request.auth.uid)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(householdId)
+        && isValidHousehold(incoming())
+        && isHouseholdDocMember(existing())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().allowedEmails == existing().allowedEmails
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Shared Bank Account & Savings Goal settings (either member)
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'accountName', 'initialBalance', 'savingsGoalPercent', 'updatedAt'
+          ])
+          ||
+          // Action 2a: Partner A edits ONLY their own display profile
+          (
+            (request.auth.uid == existing().partnerAUid || userEmail() == existing().allowedEmails[0])
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'partnerAName', 'partnerAInitials', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 2b: Partner A claims unbound slot on first sign-in (cannot remove existing members)
+          (
+            existing().partnerAUid == ''
+            && userEmail() == existing().allowedEmails[0]
+            && incoming().partnerAUid == request.auth.uid
+            && incoming().memberUids.hasAll(existing().memberUids)
+            && request.auth.uid in incoming().memberUids
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'partnerAUid', 'memberUids', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 3a: Partner B edits ONLY their own display profile
+          (
+            (request.auth.uid == existing().partnerBUid
+              || (existing().allowedEmails.size() == 2 && userEmail() == existing().allowedEmails[1]))
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'partnerBName', 'partnerBInitials', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 3b: Partner B claims unbound slot on first sign-in (cannot remove existing members)
+          (
+            existing().partnerBUid == ''
+            && existing().allowedEmails.size() == 2
+            && userEmail() == existing().allowedEmails[1]
+            && incoming().partnerBUid == request.auth.uid
+            && incoming().memberUids.hasAll(existing().memberUids)
+            && request.auth.uid in incoming().memberUids
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'partnerBUid', 'memberUids', 'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if false;
+
+      // =======================================================================
+      // 2a. Transactions Subcollection
+      // =======================================================================
+      match /transactions/{txId} {
+        allow get: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(txId)
+          && isHouseholdMember(householdId);
+
+        // Rule-enforced list query with zero get()/exists() lookups
+        allow list: if isVerifiedUser()
+          && (request.auth.uid == existing().ownerUid
+              || userEmail() in existing().allowedEmails);
+
+        allow create: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(txId)
+          && isValidTransaction(incoming(), householdId, txId)
+          && incoming().authorUid == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isHouseholdMember(householdId)
+          && matchesHouseholdOwnership(householdId, incoming());
+
+        allow update: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(txId)
+          && isValidTransaction(incoming(), householdId, txId)
+          && incoming().id == existing().id
+          && incoming().householdId == existing().householdId
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().authorUid == existing().authorUid
+          && incoming().addedBy == existing().addedBy
+          && incoming().allowedEmails == existing().allowedEmails
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'type', 'amount', 'title', 'categoryId', 'date', 'notes', 'fixedExpenseId', 'updatedAt'
+          ])
+          && isHouseholdMember(householdId);
+
+        allow delete: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(txId)
+          && isHouseholdMember(householdId);
+      }
+
+      // =======================================================================
+      // 2b. Categories Subcollection
+      // =======================================================================
+      match /categories/{catId} {
+        allow get: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(catId)
+          && isHouseholdMember(householdId);
+
+        allow list: if isVerifiedUser()
+          && (request.auth.uid == existing().ownerUid
+              || userEmail() in existing().allowedEmails);
+
+        allow create: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(catId)
+          && isValidCategory(incoming(), householdId, catId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isHouseholdMember(householdId)
+          && matchesHouseholdOwnership(householdId, incoming());
+
+        allow update: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(catId)
+          && isValidCategory(incoming(), householdId, catId)
+          && incoming().id == existing().id
+          && incoming().householdId == existing().householdId
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().allowedEmails == existing().allowedEmails
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'icon', 'color', 'type', 'defaultConcepts', 'updatedAt'
+          ])
+          && isHouseholdMember(householdId);
+
+        allow delete: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(catId)
+          && isHouseholdMember(householdId);
+      }
+
+      // =======================================================================
+      // 2c. Fixed Household Expenses Subcollection
+      // =======================================================================
+      match /fixedExpenses/{fixedId} {
+        allow get: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(fixedId)
+          && isHouseholdMember(householdId);
+
+        allow list: if isVerifiedUser()
+          && (request.auth.uid == existing().ownerUid
+              || userEmail() in existing().allowedEmails);
+
+        allow create: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(fixedId)
+          && isValidFixedExpense(incoming(), householdId, fixedId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isHouseholdMember(householdId)
+          && matchesHouseholdOwnership(householdId, incoming());
+
+        allow update: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(fixedId)
+          && isValidFixedExpense(incoming(), householdId, fixedId)
+          && incoming().id == existing().id
+          && incoming().householdId == existing().householdId
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().allowedEmails == existing().allowedEmails
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'categoryId', 'amount', 'dueDate', 'notes',
+            'amountSchedule', 'manualMonthlyAmounts', 'updatedAt'
+          ])
+          && isHouseholdMember(householdId);
+
+        allow delete: if isVerifiedUser()
+          && isValidId(householdId)
+          && isValidId(fixedId)
+          && isHouseholdMember(householdId);
+      }
+    }
+  }
+}

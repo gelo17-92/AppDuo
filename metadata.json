@@ -1,0 +1,8 @@
+{
+  "name": "App Ingresos vs Gastos",
+  "description": "Aplicación web progresiva (PWA) móvil para gestionar ingresos, gastos compartidos, balance de pareja y copias de seguridad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

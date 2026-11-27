@@ -1,0 +1,144 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Prevent iOS Safari automatic zoom on input focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+.font-num {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.pb-nav-safe {
+  padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@keyframes splash-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-bar-fill {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes splash-bar-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-splash-enter {
+  animation: splash-enter 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-splash-bar-enter {
+  animation: splash-bar-enter 450ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+}
+
+.animate-splash-bar-fill {
+  transform-origin: 0% 50%;
+  animation: splash-bar-fill 2350ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes month-slide-from-right {
+  0% {
+    opacity: 0.4;
+    transform: translateX(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes month-slide-from-left {
+  0% {
+    opacity: 0.4;
+    transform: translateX(-22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-month-next {
+  animation: month-slide-from-right 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-month-prev {
+  animation: month-slide-from-left 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
